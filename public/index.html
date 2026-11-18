@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkillSwap | Student-Powered Skill Marketplace</title>
+  <meta name="description" content="SkillSwap is a genuine student-powered marketplace where students can learn skills, exchange skills for free, book 1-on-1 lessons, and earn money as freelancers.">
+  
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+  <!-- ========================================================================
+       Top Navigation Bar
+       ======================================================================== -->
+  <header class="site-header">
+    <div class="container nav-container">
+      <!-- Brand Logo -->
+      <a href="/" class="brand-logo" aria-label="SkillSwap Home">
+        <div class="logo-badge">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+          </svg>
+        </div>
+        <div class="brand-name">Skill<span>Swap</span></div>
+      </a>
+
+      <!-- Navigation Links -->
+      <nav aria-label="Main Navigation">
+        <ul class="nav-links">
+          <li><a href="#marketplaceSection" class="active">Marketplace</a></li>
+          <li><a href="#pillarsSection">Pillars</a></li>
+          <li><a href="#studentsSection">Student Community</a></li>
+          <li><a href="#howItWorksSection">How It Works</a></li>
+        </ul>
+      </nav>
+
+      <!-- Navigation Actions (Dynamically rendered based on Auth State) -->
+      <div class="nav-actions" id="navActions">
+        <!-- Injected dynamically by main.js: Logged-in vs Logged-out -->
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- ======================================================================
+         Hero Section (Genuine Platform Overview - No Fake User Cards)
+         ====================================================================== -->
+    <section class="hero-section">
+      <div class="container hero-wrapper">
+        <!-- Hero Left Column -->
+        <div class="hero-copy">
+          <div class="hero-pill">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            Genuine Student-to-Student Network
+          </div>
+
+          <h1 class="hero-title">
+            The Student Marketplace to <span class="text-gradient">Learn, Barter & Earn.</span>
+          </h1>
+
+          <p class="hero-subtitle">
+            Exchange skills for free without spending money, book 1-on-1 tutoring from campus peers, or hire talented student freelancers in Indian Rupees (₹).
+          </p>
+
+          <!-- Search & Filter Bar -->
+          <div class="hero-search-box">
+            <div class="search-input-wrapper">
+              <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8" stroke-width="2"/>
+                <path d="m21 21-4.3-4.3" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              <input type="text" id="heroSearchInput" placeholder="Search real student services, skills, or subjects..." autocomplete="off">
+            </div>
+
+            <div class="category-select-wrapper">
+              <select id="heroCategorySelect" aria-label="Select Category">
+                <option value="All">All Categories</option>
+              </select>
+            </div>
+
+            <button class="btn btn-primary" id="heroSearchBtn">
+              Search Services
+            </button>
+          </div>
+
+          <!-- Quick Tag Pills -->
+          <div class="quick-tags">
+            <span>Popular:</span>
+            <button class="tag-pill" data-tag="Python">Python</button>
+            <button class="tag-pill" data-tag="Web Development">Web Development</button>
+            <button class="tag-pill" data-tag="Design">Design & UI</button>
+            <button class="tag-pill" data-tag="Math">Calculus</button>
+            <button class="tag-pill" data-tag="Video Editing">Video Editing</button>
+          </div>
+        </div>
+
+        <!-- Hero Right Column: Genuine Platform Concept Showcase -->
+        <div class="hero-visual">
+          <div class="hero-card-stack">
+            <!-- Platform Concept Card -->
+            <div class="hero-main-card">
+              <span class="hero-card-badge badge-exchange">SkillSwap Model</span>
+              <h3 class="hero-card-title" style="margin-top: 6px;">How Students Learn & Earn</h3>
+              <p style="font-size: 0.88rem; color: #475569; margin-bottom: 16px;">
+                Every profile, service listing, and barter proposal on SkillSwap is created by actual registered students from real colleges.
+              </p>
+
+              <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+                <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; gap: 10px;">
+                  <span style="font-size: 1.2rem;">🔄</span>
+                  <div>
+                    <strong style="color: #065f46; font-size: 0.85rem; display: block;">Free Skill Exchange (Barter)</strong>
+                    <small style="color: #047857;">Swap skills directly with zero fees or money.</small>
+                  </div>
+                </div>
+
+                <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; gap: 10px;">
+                  <span style="font-size: 1.2rem;">💼</span>
+                  <div>
+                    <strong style="color: #1e40af; font-size: 0.85rem; display: block;">Student Freelance Gigs</strong>
+                    <small style="color: #1d4ed8;">Fixed projects priced in Indian Rupees (₹).</small>
+                  </div>
+                </div>
+
+                <div style="background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; gap: 10px;">
+                  <span style="font-size: 1.2rem;">🎓</span>
+                  <div>
+                    <strong style="color: #6b21a8; font-size: 0.85rem; display: block;">1-on-1 Peer Lessons</strong>
+                    <small style="color: #7e22ce;">Live tutoring sessions in ₹/hr.</small>
+                  </div>
+                </div>
+              </div>
+
+              <div class="hero-card-footer" style="padding-top: 10px;">
+                <span style="font-size: 0.82rem; color: #64748b;">No fake reviews • Real users</span>
+                <button class="btn btn-primary btn-sm" onclick="handleAuthAction('register')">
+                  Join Community
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         Live Platform Metrics Bar (True Counts from Database)
+         ====================================================================== -->
+    <section class="metrics-bar">
+      <div class="container">
+        <div class="metrics-grid">
+          <div class="metric-item">
+            <div class="metric-icon-wrap">
+              <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+              </svg>
+            </div>
+            <div class="metric-data">
+              <h3 id="statActiveStudents">0</h3>
+              <p>Registered Students</p>
+            </div>
+          </div>
+
+          <div class="metric-item">
+            <div class="metric-icon-wrap" style="color: #059669; background-color: #ecfdf5; border-color: #a7f3d0;">
+              <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+              </svg>
+            </div>
+            <div class="metric-data">
+              <h3 id="statSkillsExchanged">0</h3>
+              <p>Barter Swaps Offered</p>
+            </div>
+          </div>
+
+          <div class="metric-item">
+            <div class="metric-icon-wrap" style="color: #7c3aed; background-color: #f5f3ff; border-color: #ddd6fe;">
+              <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </div>
+            <div class="metric-data">
+              <h3 id="statCompletedProjects">0</h3>
+              <p>Completed Deliveries</p>
+            </div>
+          </div>
+
+          <div class="metric-item">
+            <div class="metric-icon-wrap" style="color: #d97706; background-color: #fffbeb; border-color: #fde68a;">
+              <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+              </svg>
+            </div>
+            <div class="metric-data">
+              <h3 id="statColleges">0</h3>
+              <p>Universities Represented</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         Three Pillars of SkillSwap
+         ====================================================================== -->
+    <section class="pillars-section" id="pillarsSection">
+      <div class="container">
+        <div class="section-head">
+          <span class="section-badge">Student Marketplace Model</span>
+          <h2 class="section-title">One Platform. Three Genuine Opportunities.</h2>
+          <p class="section-desc">
+            Learn new skills for free with peer barter, or earn real income while in college.
+          </p>
+        </div>
+
+        <div class="pillars-grid">
+          <!-- Pillar 1: Free Skill Exchange -->
+          <div class="pillar-card">
+            <div class="pillar-icon-box pillar-green">
+              <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+              </svg>
+            </div>
+            <h3>1. Free Skill Exchange</h3>
+            <p>
+              Trade skills directly with other students without any cash involved. You teach Python or UI design, they teach you conversational language or calculus.
+            </p>
+            <ul class="pillar-list">
+              <li>
+                <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                Zero monetary fee or commission
+              </li>
+              <li>
+                <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                Mutual learning agreements
+              </li>
+              <li>
+                <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                Expand knowledge without a budget
+              </li>
+            </ul>
+          </div>
+
+          <!-- Pillar 2: Freelance Services -->
+          <div class="pillar-card">
+            <div class="pillar-icon-box pillar-blue">
+              <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+              </svg>
+            </div>
+            <h3>2. Student Freelancing</h3>
+            <p>
+              Hire talented students for frontend coding, logo design, video editing, or resume polish at transparent rates in Indian Rupees (₹).
+            </p>
+            <ul class="pillar-list">
+              <li>
+                <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                Clear pricing in ₹ (INR)
+              </li>
+              <li>
+                <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                Build your real-world portfolio
+              </li>
+              <li>
+                <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                Earn money while studying
+              </li>
+            </ul>
+          </div>
+
+          <!-- Pillar 3: 1-on-1 Lessons -->
+          <div class="pillar-card">
+            <div class="pillar-icon-box pillar-purple">
+              <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+              </svg>
+            </div>
+            <h3>3. 1-on-1 Peer Tutoring</h3>
+            <p>
+              Get personalized academic tutoring and interview prep from university upperclassmen who recently aced your exact subjects.
+            </p>
+            <ul class="pillar-list">
+              <li>
+                <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                Hourly video sessions in ₹/hr
+              </li>
+              <li>
+                <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                Calculus, CS, Physics & Engineering
+              </li>
+              <li>
+                <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                Flexible scheduling around classes
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         Categories Exploration Bar
+         ====================================================================== -->
+    <section class="categories-section">
+      <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px;">
+          <div>
+            <h2 style="font-size: 1.6rem; font-weight: 800; color: #0f172a;">Explore Skills by Domain</h2>
+            <p style="color: #64748b; font-size: 0.95rem;">Live counts based on real services published in database</p>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="resetFilters()">View All</button>
+        </div>
+
+        <div class="category-chips-scroll" id="categoryChipsContainer">
+          <!-- Populated dynamically by main.js with true counts -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         Main Marketplace Listings (Real Services from MongoDB)
+         ====================================================================== -->
+    <section class="marketplace-section" id="marketplaceSection">
+      <div class="container">
+        <!-- Controls -->
+        <div class="marketplace-controls">
+          <div>
+            <h2 style="font-size: 1.8rem; font-weight: 800; color: #0f172a; margin-bottom: 4px;">
+              Live Student Marketplace
+            </h2>
+            <p style="color: #64748b; font-size: 0.95rem;">
+              Showing genuine services and barter proposals published by registered students.
+            </p>
+          </div>
+
+          <!-- Type Filter Tabs -->
+          <div class="filter-tabs">
+            <button class="filter-tab active" data-type="all">All Services</button>
+            <button class="filter-tab" data-type="exchange">🔄 Free Barter</button>
+            <button class="filter-tab" data-type="freelance">💼 Freelance Gigs</button>
+            <button class="filter-tab" data-type="lesson">🎓 1-on-1 Lessons</button>
+          </div>
+
+          <!-- Sort Selector -->
+          <div class="sort-wrapper">
+            <label for="sortBySelect">Sort by:</label>
+            <select id="sortBySelect">
+              <option value="newest">Newest First</option>
+              <option value="price-low">Price: Low to High (₹)</option>
+              <option value="price-high">Price: High to Low (₹)</option>
+              <option value="rating">Rating</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Dynamic Grid of Services -->
+        <div class="services-grid" id="servicesGrid">
+          <!-- Loaded dynamically via fetch('/api/services') in main.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         Registered Students Community Section
+         ====================================================================== -->
+    <section class="container" id="studentsSection" style="padding: 64px 24px; border-top: 1px solid var(--color-border);">
+      <div class="section-head">
+        <span class="section-badge">Student Directory</span>
+        <h2 class="section-title">Registered Students on SkillSwap</h2>
+        <p class="section-desc">Connect with actual students from campuses across the country.</p>
+      </div>
+
+      <div class="students-grid" id="studentsGrid">
+        <!-- Loaded dynamically from /api/auth/students -->
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         How SkillSwap Works
+         ====================================================================== -->
+    <section class="how-it-works-section" id="howItWorksSection">
+      <div class="container">
+        <div class="section-head">
+          <span class="section-badge">Simple & Transparent</span>
+          <h2 class="section-title">How SkillSwap Works</h2>
+          <p class="section-desc">Get started in 3 simple steps.</p>
+        </div>
+
+        <div class="steps-grid">
+          <div class="step-card">
+            <div class="step-number">1</div>
+            <h3>Register Your Student Profile</h3>
+            <p>
+              Sign up with your college email. Add the skills you can offer (e.g. coding, design) and what you want to learn.
+            </p>
+          </div>
+
+          <div class="step-card">
+            <div class="step-number">2</div>
+            <h3>Publish a Service or Propose a Barter</h3>
+            <p>
+              List a free skill exchange or a paid freelance gig in Indian Rupees (₹). Or propose a mutual exchange on an existing listing.
+            </p>
+          </div>
+
+          <div class="step-card">
+            <div class="step-number">3</div>
+            <h3>Collaborate & Track in Dashboard</h3>
+            <p>
+              Manage incoming requests and bookings inside your student dashboard. Complete work, build experience, and track your simulated earnings.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         Call to Action Banner
+         ====================================================================== -->
+    <section class="container">
+      <div class="cta-section">
+        <div class="cta-content">
+          <h2>Ready to Share or Learn a Skill?</h2>
+          <p>
+            Create your authentic student profile in under 2 minutes. No fake accounts, no hidden fees.
+          </p>
+          <div class="cta-buttons">
+            <button class="btn btn-primary btn-lg" onclick="handleAuthAction('register')">
+              Register as Student
+            </button>
+            <button class="btn btn-outline btn-lg" style="color: white; border-color: rgba(255,255,255,0.4);" onclick="scrollToSection('marketplaceSection')">
+              Browse Marketplace
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ========================================================================
+       Footer
+       ======================================================================== -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <div class="brand-logo" style="color: white; margin-bottom: 12px;">
+            <div class="logo-badge">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+              </svg>
+            </div>
+            <span style="color: white;">Skill<span style="color: #60a5fa;">Swap</span></span>
+          </div>
+          <p>
+            The genuine student-powered skill marketplace. Empowering students to trade knowledge freely and gain real freelance experience.
+          </p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Marketplace</h4>
+          <ul>
+            <li><a href="#marketplaceSection">Free Skill Exchange</a></li>
+            <li><a href="#marketplaceSection">1-on-1 Peer Tutoring</a></li>
+            <li><a href="#marketplaceSection">Student Freelance Gigs</a></li>
+            <li><a href="#studentsSection">Registered Students</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Student Tools</h4>
+          <ul>
+            <li><a href="javascript:void(0)" onclick="handleAuthAction('post')">Publish a Service</a></li>
+            <li><a href="javascript:void(0)" onclick="openDashboard()">Student Dashboard</a></li>
+            <li><a href="javascript:void(0)" onclick="openProfileModal()">Edit Profile</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Trust & Safety</h4>
+          <ul>
+            <li><a href="#">No Fake Profiles Policy</a></li>
+            <li><a href="#">Student Verification</a></li>
+            <li><a href="#">Honor Code</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Prototype Disclaimer -->
+      <div class="prototype-disclaimer">
+        <strong>⚠️ Prototype Notice:</strong> SkillSwap is currently in developmental prototype mode. All financial transactions, lesson bookings, and skill exchanges are simulated for safety. No real bank accounts or payment gateways are linked in this preview. All amounts are displayed in Indian Rupees (₹).
+      </div>
+
+      <div class="footer-bottom">
+        <p>&copy; 2026 SkillSwap Platform. Built for students, powered by students.</p>
+        <p>Node.js • Express • MongoDB • Vanilla JS</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ========================================================================
+       MODAL 1: Login Modal
+       ======================================================================== -->
+  <div class="modal-overlay" id="loginModal" role="dialog" aria-modal="true">
+    <div class="modal-dialog" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3>Student Sign In</h3>
+        <button class="modal-close-btn" onclick="closeModal('loginModal')">
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <form id="loginForm">
+        <div class="modal-content">
+          <div class="form-group">
+            <label for="loginEmail">Student Email</label>
+            <input type="email" id="loginEmail" placeholder="your.name@college.edu" required autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label for="loginPassword">Password</label>
+            <input type="password" id="loginPassword" placeholder="••••••••" required autocomplete="current-password">
+          </div>
+        </div>
+        <div class="modal-footer" style="justify-content: space-between;">
+          <a href="javascript:void(0)" onclick="switchAuthModal('register')" style="font-size: 0.85rem; color: #2563eb; font-weight: 600;">Need an account? Register</a>
+          <button type="submit" class="btn btn-primary" id="loginSubmitBtn">Sign In</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 2: Register Modal
+       ======================================================================== -->
+  <div class="modal-overlay" id="registerModal" role="dialog" aria-modal="true">
+    <div class="modal-dialog" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3>Join SkillSwap as a Student</h3>
+        <button class="modal-close-btn" onclick="closeModal('registerModal')">
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <form id="registerForm">
+        <div class="modal-content">
+          <div class="form-group">
+            <label for="regName">Full Name</label>
+            <input type="text" id="regName" placeholder="e.g. Aryan Sharma" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="regUniversity">University / College</label>
+              <input type="text" id="regUniversity" placeholder="e.g. IIT Delhi or Delhi University" required>
+            </div>
+            <div class="form-group">
+              <label for="regMajor">Major / Field</label>
+              <input type="text" id="regMajor" placeholder="e.g. Computer Science" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="regEmail">College or Personal Email</label>
+            <input type="email" id="regEmail" placeholder="aryan@iitd.ac.in" required autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label for="regPassword">Password (minimum 6 characters)</label>
+            <input type="password" id="regPassword" minlength="6" placeholder="••••••••" required autocomplete="new-password">
+          </div>
+        </div>
+        <div class="modal-footer" style="justify-content: space-between;">
+          <a href="javascript:void(0)" onclick="switchAuthModal('login')" style="font-size: 0.85rem; color: #2563eb; font-weight: 600;">Already registered? Sign In</a>
+          <button type="submit" class="btn btn-primary" id="registerSubmitBtn">Create Student Profile</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 3: Edit Profile Modal
+       ======================================================================== -->
+  <div class="modal-overlay" id="profileModal" role="dialog" aria-modal="true">
+    <div class="modal-dialog" style="max-width: 540px;">
+      <div class="modal-header">
+        <h3>Edit Your Student Profile</h3>
+        <button class="modal-close-btn" onclick="closeModal('profileModal')">
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <form id="profileForm">
+        <div class="modal-content">
+          <div class="form-group">
+            <label for="profileName">Full Name</label>
+            <input type="text" id="profileName" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="profileUniversity">College / University</label>
+              <input type="text" id="profileUniversity" required>
+            </div>
+            <div class="form-group">
+              <label for="profileMajor">Major / Degree</label>
+              <input type="text" id="profileMajor" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="profileBio">Bio (Tell peers what you love to learn and teach)</label>
+            <textarea id="profileBio" rows="3" placeholder="I am a 3rd year student passionate about building React web apps..."></textarea>
+          </div>
+          <div class="form-group">
+            <label for="profileSkillsOffered">Skills You Can Offer or Teach (comma separated)</label>
+            <input type="text" id="profileSkillsOffered" placeholder="Python, Web Development, Calculus">
+          </div>
+          <div class="form-group">
+            <label for="profileSkillsWanted">Skills You Want to Learn (comma separated)</label>
+            <input type="text" id="profileSkillsWanted" placeholder="UI/UX Design, Spanish, Video Editing">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeModal('profileModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="saveProfileBtn">Save Profile</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 4: Student Dashboard Modal (Activities, Orders, Earnings in ₹)
+       ======================================================================== -->
+  <div class="modal-overlay" id="dashboardModal" role="dialog" aria-modal="true">
+    <div class="modal-dialog modal-dialog-large">
+      <div class="modal-header">
+        <h3 id="dashboardTitle">Student Dashboard</h3>
+        <button class="modal-close-btn" onclick="closeModal('dashboardModal')">
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-content">
+        <!-- Earnings Banner (Simulated, in ₹) -->
+        <div class="earnings-summary-box">
+          <div>
+            <span style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: #cbd5e1;">Simulated Student Earnings</span>
+            <div class="earnings-num" id="dashEarningsTotal">₹0</div>
+            <small style="color: #94a3b8;" id="dashCompletedOrders">0 completed services</small>
+          </div>
+          <div class="earnings-note">
+            ⚠️ <strong>Simulated Prototype:</strong> Earnings reflect completed bookings on this prototype. All amounts are clearly simulated in Indian Rupees (₹).
+          </div>
+        </div>
+
+        <!-- Dashboard Navigation Tabs -->
+        <div class="dashboard-tabs">
+          <button class="dash-tab active" data-tab="incomingOrders">Received Requests (<span id="countReceivedOrders">0</span>)</button>
+          <button class="dash-tab" data-tab="myRequests">My Sent Proposals (<span id="countSentRequests">0</span>)</button>
+          <button class="dash-tab" data-tab="myServices">My Published Listings (<span id="countMyServices">0</span>)</button>
+        </div>
+
+        <!-- Tab 1: Received Orders -->
+        <div id="tabIncomingOrders" class="dash-tab-pane">
+          <div id="incomingOrdersList">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Tab 2: Sent Requests -->
+        <div id="tabMyRequests" class="dash-tab-pane" style="display: none;">
+          <div id="sentRequestsList">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Tab 3: My Services -->
+        <div id="tabMyServices" class="dash-tab-pane" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <p style="color: #64748b; font-size: 0.9rem;">Manage your active marketplace listings.</p>
+            <button class="btn btn-primary btn-sm" onclick="closeModal('dashboardModal'); openModal('postServiceModal');">
+              + Publish New Service
+            </button>
+          </div>
+          <div id="myServicesList">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('dashboardModal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 5: Post a Skill / Service
+       ======================================================================== -->
+  <div class="modal-overlay" id="postServiceModal" role="dialog" aria-modal="true">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>Publish a Service on SkillSwap</h3>
+        <button class="modal-close-btn" onclick="closeModal('postServiceModal')">
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <form id="postServiceForm">
+        <div class="modal-content">
+          <div class="form-group">
+            <label for="modalTitle">Service Title</label>
+            <input type="text" id="modalTitle" placeholder="e.g. 1-on-1 Data Structures in C++ coaching" required>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="modalCategory">Category</label>
+              <select id="modalCategory" required></select>
+            </div>
+            <div class="form-group">
+              <label for="modalServiceType">Listing Type</label>
+              <select id="modalServiceType" required>
+                <option value="freelance">💼 Paid Freelance Gig</option>
+                <option value="exchange">🔄 Free Skill Exchange (Barter)</option>
+                <option value="lesson">🎓 1-on-1 Paid Lesson</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Price in ₹ -->
+          <div class="form-row" id="formPriceGroup">
+            <div class="form-group">
+              <label for="modalPrice">Student Price in Indian Rupees (₹)</label>
+              <input type="number" id="modalPrice" min="0" value="500" placeholder="500">
+            </div>
+            <div class="form-group">
+              <label for="modalPriceUnit">Pricing Structure</label>
+              <select id="modalPriceUnit">
+                <option value="fixed">Fixed Price (₹)</option>
+                <option value="per_hour">Per Hour (₹/hr)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Exchange Group (For barter) -->
+          <div class="form-group" id="formExchangeGroup" style="display: none;">
+            <label for="modalExchangeFor">Skill You Want in Return (Barter)</label>
+            <input type="text" id="modalExchangeFor" placeholder="e.g. Conversational German or UI Design feedback">
+          </div>
+
+          <div class="form-group">
+            <label for="modalDescription">Detailed Description</label>
+            <textarea id="modalDescription" rows="3" placeholder="Explain what you offer, how the session works, and how peers will benefit..." required></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="modalDelivery">Delivery / Duration</label>
+              <input type="text" id="modalDelivery" placeholder="e.g. 1 hour live session or 2 days">
+            </div>
+            <div class="form-group">
+              <label for="modalTags">Tags (comma separated)</label>
+              <input type="text" id="modalTags" placeholder="Python, Tutoring, Algorithms">
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeModal('postServiceModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="publishServiceBtn">Publish Service</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 6: Service Detail & Booking Action
+       ======================================================================== -->
+  <div class="modal-overlay" id="serviceDetailModal" role="dialog" aria-modal="true">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>Service Details</h3>
+        <button class="modal-close-btn" onclick="closeModal('serviceDetailModal')">
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-content" id="serviceDetailContent">
+        <!-- Injected dynamically by main.js -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('serviceDetailModal')">Cancel</button>
+        <button class="btn btn-primary" id="modalActionBtn">Take Action</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="/js/main.js"></script>
+</body>
+</html>
