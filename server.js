@@ -36,6 +36,7 @@ app.get('/api/health', (req, res) => {
     appName: 'SkillSwap API',
     version: '1.0.0',
     database: isMongoConnected() ? 'connected (MongoDB)' : 'in-memory (seed mode)',
+    mongoConfigured: !!process.env.MONGODB_URI,
     uptime: Math.floor(process.uptime()),
     timestamp: new Date().toISOString(),
   });
