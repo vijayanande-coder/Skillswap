@@ -1,13 +1,8 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const { isMongoConnected } = require('../config/db');
+const { ensureMongoConnected, isMongoConnected } = require('../config/db');
 
-// In-memory reference for offline/fallback mode (will be shared from runtime store)
-let runtimeUsers = [];
-
-const setRuntimeUsersRef = (users) => {
-  runtimeUsers = users;
-};
+const JWT_SECRET = process.env.JWT_SECRET || 'skillswap_dev_jwt_secret_key_2026_super_secure';
 
 const protect = async (req, res, next) => {
   let token;
@@ -18,27 +13,24 @@ const protect = async (req, res, next) => {
   ) {
     try {
       token = req.headers.authorization.split(' ')[1];
-      const decoded = jwt.verify(
-        token,
-        process.env.JWT_SECRET || 'skillswap_jwt_dev_secret_key_2026_super_secure'
-      );
+      const decoded = jwt.verify(token, JWT_SECRET);
 
-      if (isMongoConnected()) {
-        req.user = await User.findById(decoded.id).select('-password');
-      } else {
-        const found = runtimeUsers.find(
-          (u) => (u._id && u._id.toString() === decoded.id) || u.id === decoded.id
-        );
-        if (found) {
-          const { password, ...safeUser } = found;
-          req.user = safeUser;
-        }
+      // Ensure MongoDB connection is active
+      const connected = await ensureMongoConnected(6000);
+      if (!connected) {
+        return res.status(503).json({
+          success: false,
+          retryable: true,
+          message: 'Database is currently connecting. Please retry shortly.',
+        });
       }
+
+      req.user = await User.findById(decoded.id).select('-password');
 
       if (!req.user) {
         return res.status(401).json({
           success: false,
-          message: 'Not authorized: user not found',
+          message: 'Not authorized: student account not found',
         });
       }
 
@@ -47,7 +39,7 @@ const protect = async (req, res, next) => {
       console.error('Auth verification error:', error.message);
       return res.status(401).json({
         success: false,
-        message: 'Not authorized, token failed or expired',
+        message: 'Not authorized, session expired or invalid token',
       });
     }
   }
@@ -62,5 +54,4 @@ const protect = async (req, res, next) => {
 
 module.exports = {
   protect,
-  setRuntimeUsersRef,
 };

@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 /**
  * Check if student is logged in from saved JWT token
+ * Resilient against cold starts and temporary database reconnection
  */
 async function checkAuthStatus() {
   if (!authToken) {
@@ -43,19 +44,26 @@ async function checkAuthStatus() {
     const res = await fetch('/api/auth/me', {
       headers: { Authorization: `Bearer ${authToken}` },
     });
-    const result = await res.json();
 
-    if (result.success && result.user) {
-      currentUser = result.user;
-    } else {
-      // Invalid/expired token
+    if (res.ok) {
+      const result = await res.json();
+      if (result.success && result.user) {
+        currentUser = result.user;
+      }
+    } else if (res.status === 401) {
+      // ONLY clear token when the server explicitly confirms it's invalid or expired
+      console.warn('Session expired or unauthorized. Clearing stored token.');
       localStorage.removeItem('skillswap_token');
       authToken = null;
       currentUser = null;
+    } else {
+      // 503 (database connecting), 500, or Render cold start:
+      // PRESERVE the token so the user is not kicked out!
+      console.warn(`Server responded with status ${res.status}. Preserving student login token.`);
     }
   } catch (err) {
-    console.warn('Auth check error:', err);
-    currentUser = null;
+    // Network glitch or offline: preserve token
+    console.warn('Network issue during auth check. Preserving student login token.');
   }
 
   renderNav();
