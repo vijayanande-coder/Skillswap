@@ -101,6 +101,12 @@ function renderNav() {
         Dashboard
       </button>
 
+      ${currentUser.role === 'admin' ? `
+        <button class="btn btn-sm btn-admin-pill" onclick="openAdminDashboard()" title="Administrator Control Center">
+          🛡️ Admin
+        </button>
+      ` : ''}
+
       <button class="btn btn-outline btn-sm" onclick="logout()" title="Logout">
         Logout
       </button>
@@ -186,6 +192,11 @@ function setupEventListeners() {
 
   const postServiceForm = document.getElementById('postServiceForm');
   if (postServiceForm) postServiceForm.addEventListener('submit', handleCreateService);
+
+  const reviewForm = document.getElementById('reviewForm');
+  if (reviewForm) reviewForm.addEventListener('submit', handleReviewSubmit);
+
+  setupStarRatingListeners();
 
   // Listing Type Toggle in Post Service Modal
   const modalTypeSelect = document.getElementById('modalServiceType');
@@ -590,6 +601,7 @@ function renderServices(services) {
                 </h5>
                 <p>${escapeHtml(s.provider.university)}</p>
               </div>
+              ${s.provider.rating > 0 ? `<span class="star-badge" title="${s.provider.rating} stars from ${s.provider.reviewsCount} reviews">⭐ ${Number(s.provider.rating).toFixed(1)} <small>(${s.provider.reviewsCount})</small></span>` : ''}
             </div>
 
             <h3 class="card-service-title">${escapeHtml(s.title)}</h3>
@@ -662,7 +674,8 @@ async function loadStudents() {
               <div class="student-card-avatar">${escapeHtml(initials)}</div>
               <h4>${escapeHtml(student.name)}</h4>
               <p class="university">${escapeHtml(student.university)}</p>
-              <p style="font-size: 0.78rem; color: #64748b; margin-bottom: 8px;">${escapeHtml(student.major || 'Student')}</p>
+              <p style="font-size: 0.78rem; color: #64748b; margin-bottom: 6px;">${escapeHtml(student.major || 'Student')}</p>
+              ${student.rating > 0 ? `<div style="margin-bottom: 8px;"><span class="star-badge">⭐ ${Number(student.rating).toFixed(1)} (${student.reviewsCount} reviews)</span></div>` : ''}
               ${student.bio ? `<p class="bio">${escapeHtml(student.bio)}</p>` : ''}
               <div class="student-skills-row">
                 ${offers}
@@ -861,6 +874,8 @@ function openServiceDetailModal(id) {
     <div style="background-color: #f8fafc; border-radius: 8px; padding: 10px 14px; font-size: 0.8rem; color: #64748b; border: 1px solid #e2e8f0;">
       ℹ️ <strong>Simulated Prototype Mode:</strong> Bookings and barter exchanges are recorded into MongoDB. All financial amounts in Indian Rupees (₹) are simulated for demonstration.
     </div>
+
+    <div id="serviceReviewsSection" style="margin-top: 20px;"></div>
   `;
 
   if (actionBtn) {
@@ -928,6 +943,7 @@ function openServiceDetailModal(id) {
   }
 
   openModal('serviceDetailModal');
+  loadServiceReviews(service._id || service.id);
 }
 
 /**
@@ -1040,10 +1056,14 @@ async function openDashboard() {
                     : `<p style="font-size: 0.82rem; color: #1e40af; margin-top: 4px;">Price: ₹${Number(req.price).toLocaleString('en-IN')}</p>`
                 }
               </div>
-              <div>
+              <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
                 ${
                   req.status === 'pending'
                     ? `<button class="btn btn-outline btn-sm" onclick="updateOrderStatus('${req._id || req.id}', 'cancelled')">Cancel Request</button>`
+                    : req.status === 'completed'
+                    ? (req.isReviewed
+                        ? `<span class="star-badge" title="You reviewed this session ${req.reviewRating || 5} stars">⭐ Reviewed (${req.reviewRating || 5}★)</span>`
+                        : `<button class="btn btn-primary btn-sm" onclick="openReviewModal('${req._id || req.id}', '${escapeHtml(req.serviceTitle)}', '${escapeHtml(req.providerName)}')">⭐ Leave Review</button>`)
                     : `<span style="font-size: 0.82rem; color: #64748b;">${req.status.toUpperCase()}</span>`
                 }
               </div>
@@ -1333,3 +1353,622 @@ function getCategorySvg(name) {
       return `<svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>`;
   }
 }
+
+/* ==========================================================================
+   ⭐ Star Ratings & Reviews System Functions
+   ========================================================================== */
+
+/**
+ * Fetch and display real reviews in the service details modal
+ */
+async function loadServiceReviews(serviceId) {
+  const container = document.getElementById('serviceReviewsSection');
+  if (!container) return;
+
+  container.innerHTML = `<div style="text-align: center; padding: 12px; color: #64748b; font-size: 0.85rem;">Loading peer reviews...</div>`;
+
+  try {
+    const res = await fetch(`/api/reviews/service/${serviceId}`);
+    const data = await res.json();
+
+    if (data.success && data.data && data.data.length > 0) {
+      container.innerHTML = `
+        <h4 style="font-size: 1rem; font-weight: 700; color: #0f172a; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+          <span>Student Reviews & Ratings</span>
+          <span class="star-badge">⭐ ${data.data.length} review${data.data.length > 1 ? 's' : ''}</span>
+        </h4>
+        <div style="max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+          ${data.data
+            .map(
+              (r) => `
+            <div class="review-item">
+              <div class="review-header">
+                <div>
+                  <span class="review-author">${escapeHtml(r.reviewerName)}</span>
+                  <span class="review-college">• ${escapeHtml(r.reviewerUniversity)}</span>
+                </div>
+                <div class="review-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</div>
+              </div>
+              <p class="review-comment">"${escapeHtml(r.comment)}"</p>
+              <span class="review-date">${new Date(r.createdAt).toLocaleDateString('en-IN', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+              })}</span>
+            </div>
+          `
+            )
+            .join('')}
+        </div>
+      `;
+    } else {
+      container.innerHTML = `
+        <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 14px; text-align: center; color: #64748b; font-size: 0.85rem;">
+          ⭐ <strong>No reviews yet:</strong> Be the first student to review after booking or exchanging with this peer!
+        </div>
+      `;
+    }
+  } catch (err) {
+    console.warn('Error loading reviews:', err);
+    container.innerHTML = '';
+  }
+}
+
+/**
+ * Configure interactive star rating selection
+ */
+function setupStarRatingListeners() {
+  const stars = document.querySelectorAll('.star-btn');
+  const ratingInput = document.getElementById('selectedStarRating');
+  const label = document.getElementById('starRatingLabel');
+  if (!stars.length || !ratingInput) return;
+
+  const labels = {
+    1: '1 - Poor Experience',
+    2: '2 - Needs Improvement',
+    3: '3 - Satisfactory',
+    4: '4 - Very Good Session',
+    5: '5 - Exceptional Peer!',
+  };
+
+  stars.forEach((star) => {
+    star.addEventListener('click', () => {
+      const rating = parseInt(star.getAttribute('data-rating'), 10);
+      ratingInput.value = rating;
+      if (label) label.textContent = labels[rating] || `${rating} Stars`;
+
+      stars.forEach((s) => {
+        const r = parseInt(s.getAttribute('data-rating'), 10);
+        s.classList.toggle('active', r <= rating);
+      });
+    });
+
+    star.addEventListener('mouseenter', () => {
+      const hoverRating = parseInt(star.getAttribute('data-rating'), 10);
+      stars.forEach((s) => {
+        const r = parseInt(s.getAttribute('data-rating'), 10);
+        s.style.color = r <= hoverRating ? '#f59e0b' : '#cbd5e1';
+      });
+    });
+
+    star.addEventListener('mouseleave', () => {
+      const currentRating = parseInt(ratingInput.value, 10);
+      stars.forEach((s) => {
+        const r = parseInt(s.getAttribute('data-rating'), 10);
+        s.style.color = '';
+        s.classList.toggle('active', r <= currentRating);
+      });
+    });
+  });
+}
+
+/**
+ * Open review submission modal
+ */
+function openReviewModal(bookingId, serviceTitle, providerName) {
+  const idInput = document.getElementById('reviewBookingId');
+  const titleEl = document.getElementById('reviewServiceTitle');
+  const providerEl = document.getElementById('reviewProviderName');
+  const commentEl = document.getElementById('reviewComment');
+  const ratingInput = document.getElementById('selectedStarRating');
+  const label = document.getElementById('starRatingLabel');
+
+  if (idInput) idInput.value = bookingId;
+  if (titleEl) titleEl.textContent = serviceTitle;
+  if (providerEl) providerEl.textContent = `Provider: ${providerName}`;
+  if (commentEl) commentEl.value = '';
+  if (ratingInput) ratingInput.value = 5;
+  if (label) label.textContent = '5 - Exceptional Peer!';
+
+  document.querySelectorAll('.star-btn').forEach((s) => s.classList.add('active'));
+
+  openModal('reviewModal');
+}
+
+/**
+ * Submit peer review and rating
+ */
+async function handleReviewSubmit(e) {
+  e.preventDefault();
+  const submitBtn = document.getElementById('submitReviewBtn');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+  }
+
+  const bookingId = document.getElementById('reviewBookingId').value;
+  const rating = parseInt(document.getElementById('selectedStarRating').value, 10);
+  const comment = document.getElementById('reviewComment').value.trim();
+
+  try {
+    const res = await fetch('/api/reviews', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({ bookingId, rating, comment }),
+    });
+
+    const result = await res.json();
+
+    if (result.success) {
+      showToast(result.message || '⭐ Review submitted successfully!', 'success');
+      closeModal('reviewModal');
+      await checkAuthStatus();
+      openDashboard();
+      loadServices();
+      loadStudents();
+    } else {
+      showToast(result.message || 'Failed to submit review.', 'info');
+    }
+  } catch (err) {
+    console.error('Submit review error:', err);
+    showToast('Failed to connect to server.', 'info');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit Review';
+    }
+  }
+}
+
+/* ==========================================================================
+   🛡️ Admin Control Center Dashboard Functions
+   ========================================================================== */
+let adminUsersCache = [];
+let adminServicesCache = [];
+
+async function openAdminDashboard() {
+  if (!currentUser) {
+    openModal('loginModal');
+    return;
+  }
+
+  openModal('adminModal');
+  switchAdminTab('overview');
+}
+
+function switchAdminTab(tabName) {
+  document.querySelectorAll('.admin-tab-btn').forEach((btn) => {
+    btn.classList.toggle('active', btn.getAttribute('data-admintab') === tabName);
+  });
+
+  const panes = ['Overview', 'Users', 'Services', 'Bookings'];
+  panes.forEach((p) => {
+    const el = document.getElementById(`adminPane${p}`);
+    if (el) el.style.display = p.toLowerCase() === tabName.toLowerCase() ? 'block' : 'none';
+  });
+
+  if (tabName === 'overview') loadAdminStats();
+  if (tabName === 'users') loadAdminUsers();
+  if (tabName === 'services') loadAdminServices();
+  if (tabName === 'bookings') loadAdminBookings();
+}
+
+async function loadAdminStats() {
+  try {
+    const res = await fetch('/api/admin/stats', {
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
+    const result = await res.json();
+
+    if (result.success && result.data) {
+      const d = result.data;
+      document.getElementById('kpiTotalUsers').textContent = d.users.total;
+      document.getElementById('kpiUsersSub').textContent = `${d.users.students} Students • ${d.users.admins} Admins`;
+      document.getElementById('kpiTotalServices').textContent = d.services.total;
+      document.getElementById('kpiServicesSub').textContent = `${d.services.active} Active • ${d.services.paused} Paused`;
+      document.getElementById('kpiTotalBookings').textContent = d.bookings.total;
+      document.getElementById('kpiBookingsSub').textContent = `${d.bookings.completed} Completed • ${d.bookings.pending} Pending`;
+      document.getElementById('kpiTotalVolume').textContent = `₹${(d.financials.totalSimulatedVolumeINR || 0).toLocaleString('en-IN')}`;
+      document.getElementById('kpiCollegesSub').textContent = `Across ${d.collegesCount} Colleges`;
+
+      document.getElementById('adminTabUsersCount').textContent = d.users.total;
+      document.getElementById('adminTabServicesCount').textContent = d.services.total;
+      document.getElementById('adminTabBookingsCount').textContent = d.bookings.total;
+
+      const claimBanner = document.getElementById('adminClaimBanner');
+      if (claimBanner) claimBanner.style.display = d.users.admins === 0 ? 'flex' : 'none';
+
+      const usersList = document.getElementById('adminRecentUsersList');
+      if (usersList) {
+        usersList.innerHTML =
+          d.recentActivity.users
+            .map(
+              (u) => `
+          <div class="admin-mini-row">
+            <div>
+              <strong>${escapeHtml(u.name)}</strong> (${escapeHtml(u.university)})
+              <small style="display:block; color:#64748b;">${escapeHtml(u.email)}</small>
+            </div>
+            <span class="role-badge-${u.role}">${u.role.toUpperCase()}</span>
+          </div>
+        `
+            )
+            .join('') || '<p style="color:#64748b; font-size:0.85rem;">No recent users.</p>';
+      }
+
+      const servicesList = document.getElementById('adminRecentServicesList');
+      if (servicesList) {
+        servicesList.innerHTML =
+          d.recentActivity.services
+            .map(
+              (s) => `
+          <div class="admin-mini-row">
+            <div>
+              <strong>${escapeHtml(s.title)}</strong>
+              <small style="display:block; color:#64748b;">${escapeHtml(s.category)} • By ${escapeHtml(
+                (s.provider && s.provider.name) || 'Student'
+              )}</small>
+            </div>
+            <span class="status-badge status-badge-${s.status === 'active' ? 'accepted' : 'cancelled'}">${s.status}</span>
+          </div>
+        `
+            )
+            .join('') || '<p style="color:#64748b; font-size:0.85rem;">No recent services.</p>';
+      }
+    } else if (res.status === 403) {
+      showToast('Admin privileges required to view admin stats.', 'info');
+    }
+  } catch (err) {
+    console.error('Error loading admin stats:', err);
+  }
+}
+
+async function loadAdminUsers() {
+  const tbody = document.getElementById('adminUsersTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #64748b;">Loading users...</td></tr>`;
+
+  try {
+    const res = await fetch('/api/admin/users', {
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
+    const result = await res.json();
+
+    if (result.success && result.data) {
+      adminUsersCache = result.data;
+      renderAdminUsersTable(result.data);
+    } else {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #dc2626;">${result.message || 'Failed to load users.'}</td></tr>`;
+    }
+  } catch (err) {
+    console.error('Error fetching admin users:', err);
+  }
+}
+
+function renderAdminUsersTable(users) {
+  const tbody = document.getElementById('adminUsersTableBody');
+  if (!tbody) return;
+
+  if (users.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #64748b; padding: 20px;">No students match criteria.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = users
+    .map((u) => {
+      const isSelf = currentUser && (currentUser._id === u._id || currentUser.id === u._id);
+      const verifyBtn = `<button class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 3px 8px;" onclick="toggleAdminUserVerify('${u._id}')">${u.isVerifiedStudent ? 'Revoke Verify' : 'Verify Student'}</button>`;
+      const roleBtn = isSelf
+        ? ''
+        : `<button class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 3px 8px;" onclick="toggleAdminUserRole('${u._id}', '${u.role}')">${u.role === 'admin' ? 'Make Student' : 'Make Admin'}</button>`;
+      const deleteBtn = isSelf
+        ? ''
+        : `<button class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 3px 8px; color: #dc2626; border-color: #fecaca;" onclick="deleteAdminUser('${u._id}', '${escapeHtml(u.name)}')">Delete</button>`;
+
+      return `
+      <tr>
+        <td><strong>${escapeHtml(u.name)}</strong> ${u.rating > 0 ? `<small style="color:#f59e0b;">(⭐${u.rating})</small>` : ''}</td>
+        <td>${escapeHtml(u.email)}</td>
+        <td>${escapeHtml(u.university)}</td>
+        <td><span class="role-badge-${u.role}">${u.role.toUpperCase()}</span></td>
+        <td><span class="status-badge ${u.isVerifiedStudent ? 'status-badge-accepted' : 'status-badge-pending'}">${u.isVerifiedStudent ? 'Verified' : 'Unverified'}</span></td>
+        <td>${new Date(u.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+        <td>
+          <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+            ${verifyBtn}
+            ${roleBtn}
+            ${deleteBtn}
+          </div>
+        </td>
+      </tr>
+    `;
+    })
+    .join('');
+}
+
+function filterAdminUsers() {
+  const search = (document.getElementById('adminUserSearch')?.value || '').toLowerCase().trim();
+  const role = document.getElementById('adminUserRoleFilter')?.value || 'all';
+
+  let filtered = adminUsersCache.filter((u) => {
+    const matchSearch =
+      !search ||
+      u.name.toLowerCase().includes(search) ||
+      u.email.toLowerCase().includes(search) ||
+      u.university.toLowerCase().includes(search);
+    const matchRole = role === 'all' || u.role === role;
+    return matchSearch && matchRole;
+  });
+
+  renderAdminUsersTable(filtered);
+}
+
+async function toggleAdminUserVerify(id) {
+  try {
+    const res = await fetch(`/api/admin/users/${id}/verify`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
+    const result = await res.json();
+    if (result.success) {
+      showToast(result.message, 'success');
+      loadAdminUsers();
+      loadStudents();
+    } else {
+      showToast(result.message || 'Error updating verification', 'info');
+    }
+  } catch (e) {
+    showToast('Failed to update verification', 'info');
+  }
+}
+
+async function toggleAdminUserRole(id, currentRole) {
+  const newRole = currentRole === 'admin' ? 'student' : 'admin';
+  if (!confirm(`Are you sure you want to change this user's role to ${newRole.toUpperCase()}?`)) return;
+
+  try {
+    const res = await fetch(`/api/admin/users/${id}/role`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({ role: newRole }),
+    });
+    const result = await res.json();
+    if (result.success) {
+      showToast(result.message, 'success');
+      loadAdminUsers();
+    } else {
+      showToast(result.message || 'Error updating role', 'info');
+    }
+  } catch (e) {
+    showToast('Failed to update role', 'info');
+  }
+}
+
+async function deleteAdminUser(id, name) {
+  if (!confirm(`Are you sure you want to permanently delete user "${name}" and all their listings?`)) return;
+
+  try {
+    const res = await fetch(`/api/admin/users/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
+    const result = await res.json();
+    if (result.success) {
+      showToast('User account removed.', 'success');
+      loadAdminUsers();
+      loadServices();
+      loadStudents();
+      loadStats();
+    } else {
+      showToast(result.message || 'Error deleting user', 'info');
+    }
+  } catch (e) {
+    showToast('Failed to delete user', 'info');
+  }
+}
+
+async function loadAdminServices() {
+  const tbody = document.getElementById('adminServicesTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #64748b;">Loading services...</td></tr>`;
+
+  try {
+    const res = await fetch('/api/admin/services', {
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
+    const result = await res.json();
+
+    if (result.success && result.data) {
+      adminServicesCache = result.data;
+      renderAdminServicesTable(result.data);
+    } else {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #dc2626;">${result.message || 'Failed to load services.'}</td></tr>`;
+    }
+  } catch (err) {
+    console.error('Error fetching admin services:', err);
+  }
+}
+
+function renderAdminServicesTable(services) {
+  const tbody = document.getElementById('adminServicesTableBody');
+  if (!tbody) return;
+
+  if (services.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #64748b; padding: 20px;">No services match criteria.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = services
+    .map((s) => {
+      const isPaused = s.status === 'paused';
+      return `
+      <tr>
+        <td><strong>${escapeHtml(s.title)}</strong></td>
+        <td>${escapeHtml((s.provider && s.provider.name) || 'Student')} <small style="display:block; color:#64748b;">${escapeHtml(
+        (s.provider && s.provider.university) || ''
+      )}</small></td>
+        <td><span class="card-tag">${escapeHtml(s.category)}</span></td>
+        <td><span style="text-transform: capitalize;">${escapeHtml(s.serviceType)}</span></td>
+        <td><strong>${s.serviceType === 'exchange' ? 'Free Barter' : `₹${s.price}`}</strong></td>
+        <td><span class="status-badge ${isPaused ? 'status-badge-cancelled' : 'status-badge-accepted'}">${s.status}</span></td>
+        <td>
+          <div style="display: flex; gap: 4px;">
+            <button class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 3px 8px;" onclick="toggleAdminServiceStatus('${s._id}', '${s.status}')">
+              ${isPaused ? 'Activate' : 'Pause'}
+            </button>
+            <button class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 3px 8px; color: #dc2626; border-color: #fecaca;" onclick="deleteAdminService('${s._id}', '${escapeHtml(s.title)}')">
+              Delete
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+    })
+    .join('');
+}
+
+function filterAdminServices() {
+  const search = (document.getElementById('adminServiceSearch')?.value || '').toLowerCase().trim();
+  const status = document.getElementById('adminServiceStatusFilter')?.value || 'all';
+
+  let filtered = adminServicesCache.filter((s) => {
+    const matchSearch =
+      !search ||
+      s.title.toLowerCase().includes(search) ||
+      (s.provider && s.provider.name && s.provider.name.toLowerCase().includes(search));
+    const matchStatus = status === 'all' || s.status === status;
+    return matchSearch && matchStatus;
+  });
+
+  renderAdminServicesTable(filtered);
+}
+
+async function toggleAdminServiceStatus(id, currentStatus) {
+  const newStatus = currentStatus === 'active' ? 'paused' : 'active';
+  try {
+    const res = await fetch(`/api/admin/services/${id}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({ status: newStatus }),
+    });
+    const result = await res.json();
+    if (result.success) {
+      showToast(result.message, 'success');
+      loadAdminServices();
+      loadServices();
+    } else {
+      showToast(result.message || 'Error updating status', 'info');
+    }
+  } catch (e) {
+    showToast('Failed to update service status', 'info');
+  }
+}
+
+async function deleteAdminService(id, title) {
+  if (!confirm(`Are you sure you want to remove listing "${title}" from the marketplace?`)) return;
+
+  try {
+    const res = await fetch(`/api/admin/services/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
+    const result = await res.json();
+    if (result.success) {
+      showToast('Service listing removed by admin.', 'success');
+      loadAdminServices();
+      loadServices();
+      loadStats();
+    } else {
+      showToast(result.message || 'Error deleting service', 'info');
+    }
+  } catch (e) {
+    showToast('Failed to delete service', 'info');
+  }
+}
+
+async function loadAdminBookings() {
+  const tbody = document.getElementById('adminBookingsTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #64748b;">Loading bookings...</td></tr>`;
+
+  const status = document.getElementById('adminBookingStatusFilter')?.value || 'all';
+  const query = status !== 'all' ? `?status=${status}` : '';
+
+  try {
+    const res = await fetch(`/api/admin/bookings${query}`, {
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
+    const result = await res.json();
+
+    if (result.success && result.data) {
+      if (result.data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #64748b; padding: 20px;">No bookings found.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = result.data
+        .map(
+          (b) => `
+        <tr>
+          <td><strong>${escapeHtml(b.serviceTitle)}</strong></td>
+          <td><span style="text-transform: capitalize;">${escapeHtml(b.serviceType)}</span></td>
+          <td>${escapeHtml(b.clientName)} <small style="display:block; color:#64748b;">${escapeHtml(
+            b.clientUniversity || 'Student'
+          )}</small></td>
+          <td>${escapeHtml(b.providerName)}</td>
+          <td>${b.serviceType === 'exchange' ? `⇄ Barter: "${escapeHtml(b.exchangeOffer)}"` : `₹${b.price}`}</td>
+          <td><span class="status-badge status-badge-${b.status}">${b.status.toUpperCase()}</span></td>
+          <td>${new Date(b.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}</td>
+        </tr>
+      `
+        )
+        .join('');
+    } else {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #dc2626;">${result.message || 'Failed to load bookings.'}</td></tr>`;
+    }
+  } catch (err) {
+    console.error('Error fetching admin bookings:', err);
+  }
+}
+
+async function claimPlatformAdmin() {
+  try {
+    const res = await fetch('/api/admin/claim-owner', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
+    });
+    const result = await res.json();
+    if (result.success) {
+      showToast(result.message, 'success');
+      await checkAuthStatus();
+      loadAdminStats();
+    } else {
+      showToast(result.message || 'Unable to claim admin.', 'info');
+    }
+  } catch (err) {
+    showToast('Failed to claim admin.', 'info');
+  }
+}
+

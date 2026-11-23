@@ -794,6 +794,252 @@
     </div>
   </div>
 
+  <!-- ========================================================================
+       MODAL 7: Platform Administrator Dashboard
+       ======================================================================== -->
+  <div class="modal-overlay" id="adminModal" role="dialog" aria-modal="true">
+    <div class="modal-dialog modal-dialog-admin">
+      <div class="modal-header admin-modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="admin-shield-icon">🛡️</div>
+          <div>
+            <h3 style="margin: 0; font-size: 1.25rem; font-weight: 800;">Admin Control Center</h3>
+            <p style="margin: 2px 0 0; font-size: 0.78rem; color: #64748b;">Manage users, moderate services & oversee platform activity</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="closeModal('adminModal')">
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Admin Tabs Navigation -->
+      <div class="admin-nav-tabs">
+        <button class="admin-tab-btn active" data-admintab="overview" onclick="switchAdminTab('overview')">
+          📊 Overview
+        </button>
+        <button class="admin-tab-btn" data-admintab="users" onclick="switchAdminTab('users')">
+          👥 Students & Users (<span id="adminTabUsersCount">0</span>)
+        </button>
+        <button class="admin-tab-btn" data-admintab="services" onclick="switchAdminTab('services')">
+          🛠️ Services (<span id="adminTabServicesCount">0</span>)
+        </button>
+        <button class="admin-tab-btn" data-admintab="bookings" onclick="switchAdminTab('bookings')">
+          📦 Bookings (<span id="adminTabBookingsCount">0</span>)
+        </button>
+      </div>
+
+      <div class="modal-content admin-modal-body">
+        <!-- TAB 1: OVERVIEW -->
+        <div class="admin-tab-pane" id="adminPaneOverview" style="display: block;">
+          <!-- KPI Cards -->
+          <div class="admin-kpi-grid">
+            <div class="admin-kpi-card kpi-blue">
+              <span class="kpi-label">Total Users</span>
+              <h2 id="kpiTotalUsers">0</h2>
+              <span class="kpi-sub" id="kpiUsersSub">0 Students • 0 Admins</span>
+            </div>
+            <div class="admin-kpi-card kpi-indigo">
+              <span class="kpi-label">Marketplace Services</span>
+              <h2 id="kpiTotalServices">0</h2>
+              <span class="kpi-sub" id="kpiServicesSub">0 Active • 0 Paused</span>
+            </div>
+            <div class="admin-kpi-card kpi-green">
+              <span class="kpi-label">Total Bookings & Barters</span>
+              <h2 id="kpiTotalBookings">0</h2>
+              <span class="kpi-sub" id="kpiBookingsSub">0 Completed • 0 Pending</span>
+            </div>
+            <div class="admin-kpi-card kpi-amber">
+              <span class="kpi-label">Simulated Volume (₹)</span>
+              <h2 id="kpiTotalVolume">₹0</h2>
+              <span class="kpi-sub" id="kpiCollegesSub">Across 0 Colleges</span>
+            </div>
+          </div>
+
+          <!-- Quick Actions & Claim Banner -->
+          <div id="adminClaimBanner" style="display: none; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 12px 16px; margin: 16px 0; justify-content: space-between; align-items: center;">
+            <div>
+              <strong style="color: #1e3a8a;">Owner Promotion Available:</strong>
+              <p style="margin: 2px 0 0; font-size: 0.82rem; color: #3b82f6;">No administrator currently claimed this platform. Claim admin privileges now.</p>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="claimPlatformAdmin()">Claim Admin</button>
+          </div>
+
+          <!-- Recent Activity Lists -->
+          <div class="admin-two-col">
+            <div class="admin-card-box">
+              <h4>Recent Student Signups</h4>
+              <div id="adminRecentUsersList" class="admin-mini-list">
+                <p style="color: #64748b; font-size: 0.85rem;">Loading recent users...</p>
+              </div>
+            </div>
+            <div class="admin-card-box">
+              <h4>Recent Marketplace Listings</h4>
+              <div id="adminRecentServicesList" class="admin-mini-list">
+                <p style="color: #64748b; font-size: 0.85rem;">Loading recent services...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: USERS MANAGEMENT -->
+        <div class="admin-tab-pane" id="adminPaneUsers" style="display: none;">
+          <div class="admin-filter-bar">
+            <input type="text" id="adminUserSearch" placeholder="Search by name, email, or university..." oninput="filterAdminUsers()">
+            <select id="adminUserRoleFilter" onchange="filterAdminUsers()">
+              <option value="all">All Roles</option>
+              <option value="student">Students Only</option>
+              <option value="admin">Admins Only</option>
+            </select>
+            <button class="btn btn-outline btn-sm" onclick="loadAdminUsers()">Refresh</button>
+          </div>
+          <div class="admin-table-wrapper">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Student Name</th>
+                  <th>Email</th>
+                  <th>University</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>Joined</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="adminUsersTableBody">
+                <tr><td colspan="7" style="text-align: center; color: #64748b;">Loading registered students from MongoDB Atlas...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 3: SERVICES MODERATION -->
+        <div class="admin-tab-pane" id="adminPaneServices" style="display: none;">
+          <div class="admin-filter-bar">
+            <input type="text" id="adminServiceSearch" placeholder="Search service title or provider..." oninput="filterAdminServices()">
+            <select id="adminServiceStatusFilter" onchange="filterAdminServices()">
+              <option value="all">All Statuses</option>
+              <option value="active">Active Only</option>
+              <option value="paused">Paused Only</option>
+            </select>
+            <button class="btn btn-outline btn-sm" onclick="loadAdminServices()">Refresh</button>
+          </div>
+          <div class="admin-table-wrapper">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Provider</th>
+                  <th>Category</th>
+                  <th>Type</th>
+                  <th>Price</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="adminServicesTableBody">
+                <tr><td colspan="7" style="text-align: center; color: #64748b;">Loading services from MongoDB Atlas...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 4: BOOKINGS & BARTER OVERSIGHT -->
+        <div class="admin-tab-pane" id="adminPaneBookings" style="display: none;">
+          <div class="admin-filter-bar">
+            <select id="adminBookingStatusFilter" onchange="loadAdminBookings()">
+              <option value="all">All Bookings</option>
+              <option value="pending">Pending</option>
+              <option value="accepted">Accepted</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+            <button class="btn btn-outline btn-sm" onclick="loadAdminBookings()">Refresh</button>
+          </div>
+          <div class="admin-table-wrapper">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Service Title</th>
+                  <th>Type</th>
+                  <th>Client</th>
+                  <th>Provider</th>
+                  <th>Terms / Price</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody id="adminBookingsTableBody">
+                <tr><td colspan="7" style="text-align: center; color: #64748b;">Loading bookings from MongoDB Atlas...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="justify-content: space-between;">
+        <span style="font-size: 0.8rem; color: #64748b;">🔒 Protected Administrator Area • Live MongoDB Atlas Connection</span>
+        <button class="btn btn-outline" onclick="closeModal('adminModal')">Close Panel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 8: Leave a Review & Rating Modal
+       ======================================================================== -->
+  <div class="modal-overlay" id="reviewModal" role="dialog" aria-modal="true">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.4rem;">⭐</span>
+          <div>
+            <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800;">Rate & Review Peer</h3>
+            <p style="margin: 2px 0 0; font-size: 0.78rem; color: #64748b;">Help your campus community with authentic feedback</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="closeModal('reviewModal')">
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <form id="reviewForm">
+        <input type="hidden" id="reviewBookingId" value="">
+        <div class="modal-content">
+          <!-- Service summary pill -->
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+            <span style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #64748b; letter-spacing: 0.5px;">Completed Session</span>
+            <h4 id="reviewServiceTitle" style="margin: 4px 0 2px; color: #0f172a; font-size: 1rem;">Service Title</h4>
+            <p id="reviewProviderName" style="margin: 0; font-size: 0.85rem; color: #2563eb; font-weight: 600;">Provider: Student Name</p>
+          </div>
+
+          <!-- Interactive Star Selector -->
+          <div class="form-group" style="text-align: center; margin-bottom: 20px;">
+            <label style="display: block; font-weight: 700; margin-bottom: 8px;">Select Star Rating</label>
+            <div class="star-rating-select" id="starRatingContainer">
+              <span class="star-btn active" data-rating="1">★</span>
+              <span class="star-btn active" data-rating="2">★</span>
+              <span class="star-btn active" data-rating="3">★</span>
+              <span class="star-btn active" data-rating="4">★</span>
+              <span class="star-btn active" data-rating="5">★</span>
+            </div>
+            <input type="hidden" id="selectedStarRating" value="5">
+            <span id="starRatingLabel" style="font-size: 0.85rem; font-weight: 700; color: #2563eb; margin-top: 6px; display: inline-block;">5 - Exceptional Peer!</span>
+          </div>
+
+          <div class="form-group">
+            <label for="reviewComment">Your Feedback & Experience</label>
+            <textarea id="reviewComment" rows="4" placeholder="How was the session? Did they deliver on time? Was their explanation clear?..." required minlength="3" maxlength="1000"></textarea>
+            <small style="color: #64748b; font-size: 0.75rem;">Your review will appear publicly on the student's profile and service card.</small>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeModal('reviewModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="submitReviewBtn">Submit Review</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- JavaScript -->
   <script src="/js/main.js"></script>
 </body>

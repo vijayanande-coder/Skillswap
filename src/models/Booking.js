@@ -60,6 +60,14 @@ const bookingSchema = new mongoose.Schema(
       enum: ['free_exchange', 'simulated_held_in_escrow', 'simulated_credited'],
       default: 'free_exchange',
     },
+    isReviewed: {
+      type: Boolean,
+      default: false,
+    },
+    reviewRating: {
+      type: Number,
+      default: null,
+    },
   },
   {
     timestamps: true,
