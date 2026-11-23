@@ -23,6 +23,7 @@ let registeredStudents = [];
 document.addEventListener('DOMContentLoaded', async () => {
   setupEventListeners();
   await checkAuthStatus();
+  fetchUnreadCount();
   initCategories();
   loadStats();
   loadServices();
@@ -95,6 +96,10 @@ function renderNav() {
       <button class="btn btn-primary btn-sm" onclick="openModal('postServiceModal')">
         <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
         Post a Skill
+      </button>
+
+      <button class="btn btn-outline btn-sm" onclick="openMessagesFromNav()" title="Student In-App Messages">
+        💬 Messages <span id="navUnreadDot" class="nav-unread-dot" style="display: none;"></span>
       </button>
 
       <button class="btn btn-outline btn-sm" onclick="openDashboard()">
@@ -230,9 +235,28 @@ function setupEventListeners() {
         document.getElementById('tabMyRequests').style.display = 'block';
       } else if (tabTarget === 'myServices') {
         document.getElementById('tabMyServices').style.display = 'block';
+      } else if (tabTarget === 'myMessages') {
+        document.getElementById('tabMyMessages').style.display = 'block';
+        loadDashboardConversations();
       }
     });
   });
+
+  // Chat Form Listeners
+  const chatSendForm = document.getElementById('chatSendForm');
+  if (chatSendForm) {
+    chatSendForm.addEventListener('submit', handleSendMessage);
+  }
+
+  const chatInputText = document.getElementById('chatInputText');
+  if (chatInputText) {
+    chatInputText.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        chatSendForm.dispatchEvent(new Event('submit', { cancelable: true }));
+      }
+    });
+  }
 }
 
 /**
@@ -681,6 +705,11 @@ async function loadStudents() {
                 ${offers}
                 ${wants}
               </div>
+              ${
+                currentUser && (currentUser._id || currentUser.id).toString() === (student._id || student.id).toString()
+                  ? ''
+                  : `<button class="btn btn-outline btn-xs" style="margin-top: 10px; width: 100%; border-radius: 6px; font-weight: 600;" onclick="openDirectChat('${student._id || student.id}', '${escapeHtml(student.name)}', '${escapeHtml(student.university || '')}')">💬 Message Student</button>`
+              }
             </div>
           `;
         })
@@ -939,7 +968,26 @@ function openServiceDetailModal(id) {
         actionBtn.disabled = false;
         actionBtn.textContent = actionText;
       }
-    };
+  }
+
+  const msgBtn = document.getElementById('modalMessageBtn');
+  if (msgBtn) {
+    const providerId = service.provider.userId || service.provider._id || service.provider.id;
+    if (currentUser && !isOwner && providerId) {
+      msgBtn.style.display = 'inline-flex';
+      msgBtn.onclick = () => {
+        closeModal('serviceDetailModal');
+        openDirectChat(
+          providerId,
+          service.provider.name,
+          service.provider.university || '',
+          service._id || service.id,
+          service.title
+        );
+      };
+    } else {
+      msgBtn.style.display = 'none';
+    }
   }
 
   openModal('serviceDetailModal');
@@ -977,6 +1025,7 @@ async function openDashboard() {
     document.getElementById('countReceivedOrders').textContent = received.length;
     document.getElementById('countSentRequests').textContent = sent.length;
     document.getElementById('countMyServices').textContent = myServices.length;
+    fetchUnreadCount();
 
     // Render Tab 1: Received Orders
     const receivedContainer = document.getElementById('incomingOrdersList');
@@ -1008,7 +1057,8 @@ async function openDashboard() {
                 ${order.notes ? `<p style="font-size: 0.8rem; color: #64748b; font-style: italic;">Note: "${escapeHtml(order.notes)}"</p>` : ''}
               </div>
 
-              <div style="display: flex; gap: 8px;">
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <button class="btn btn-outline btn-sm" onclick="closeModal('dashboardModal'); openDirectChat('${order.client}', '${escapeHtml(order.clientName)}', '${escapeHtml(order.clientUniversity || '')}', '${order.service}', '${escapeHtml(order.serviceTitle)}', '${order._id || order.id}')" title="Message client student">💬 Chat</button>
                 ${
                   isPending
                     ? `
@@ -1057,6 +1107,7 @@ async function openDashboard() {
                 }
               </div>
               <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
+                <button class="btn btn-outline btn-sm" onclick="closeModal('dashboardModal'); openDirectChat('${req.provider}', '${escapeHtml(req.providerName)}', '', '${req.service}', '${escapeHtml(req.serviceTitle)}', '${req._id || req.id}')" title="Message provider student">💬 Chat</button>
                 ${
                   req.status === 'pending'
                     ? `<button class="btn btn-outline btn-sm" onclick="updateOrderStatus('${req._id || req.id}', 'cancelled')">Cancel Request</button>`
@@ -1971,4 +2022,464 @@ async function claimPlatformAdmin() {
     showToast('Failed to claim admin.', 'info');
   }
 }
+
+/* ==========================================================================
+   💬 In-App Student Messaging / Chat System Functions
+   ========================================================================== */
+let activeChatPartnerId = null;
+let chatPollingTimer = null;
+
+/**
+ * Fetch total unread message count and update badges
+ */
+async function fetchUnreadCount() {
+  if (!authToken || !currentUser) {
+    const navDot = document.getElementById('navUnreadDot');
+    if (navDot) navDot.style.display = 'none';
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/messages/unread-count', {
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
+    const result = await res.json();
+
+    if (result.success) {
+      const count = result.unreadCount || 0;
+      const navDot = document.getElementById('navUnreadDot');
+      if (navDot) {
+        navDot.style.display = count > 0 ? 'inline-block' : 'none';
+      }
+
+      const dashCount = document.getElementById('countMessages');
+      if (dashCount) {
+        dashCount.textContent = count;
+      }
+    }
+  } catch (err) {
+    console.warn('Could not fetch unread messages count:', err);
+  }
+}
+
+/**
+ * Open Messages from Navbar
+ */
+async function openMessagesFromNav() {
+  if (!currentUser || !authToken) {
+    openModal('loginModal');
+    return;
+  }
+
+  await openDashboard();
+  // Switch to messages tab
+  const msgTab = document.querySelector('.dash-tab[data-tab="myMessages"]');
+  if (msgTab) {
+    msgTab.click();
+  }
+}
+
+/**
+ * Open Direct Chat Modal with a specific student peer
+ */
+async function openDirectChat(partnerId, partnerName, partnerCollege, serviceId, serviceTitle, bookingId) {
+  if (!currentUser || !authToken) {
+    showToast('Please sign in or register to message student peers.', 'info');
+    openModal('loginModal');
+    return;
+  }
+
+  const currentId = (currentUser._id || currentUser.id).toString();
+  if (partnerId && partnerId.toString() === currentId) {
+    showToast('This is your own profile.', 'info');
+    return;
+  }
+
+  activeChatPartnerId = partnerId;
+
+  // Set form hidden inputs
+  const partnerInput = document.getElementById('chatPartnerId');
+  if (partnerInput) partnerInput.value = partnerId;
+
+  const srvInput = document.getElementById('chatServiceId');
+  if (srvInput) srvInput.value = serviceId || '';
+
+  const bkgInput = document.getElementById('chatBookingId');
+  if (bkgInput) bkgInput.value = bookingId || '';
+
+  // Set header info
+  const nameEl = document.getElementById('chatModalPartnerName');
+  if (nameEl) nameEl.textContent = partnerName || 'Student Peer';
+
+  const collegeEl = document.getElementById('chatModalPartnerCollege');
+  if (collegeEl) collegeEl.textContent = partnerCollege || 'Campus Peer';
+
+  const avatarEl = document.getElementById('chatModalAvatar');
+  if (avatarEl) {
+    const initials = (partnerName || 'ST')
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .substring(0, 2);
+    avatarEl.textContent = initials;
+  }
+
+  // Context banner
+  const contextBanner = document.getElementById('chatContextBanner');
+  const contextText = document.getElementById('chatContextText');
+  if (contextBanner && contextText) {
+    if (serviceTitle) {
+      contextBanner.style.display = 'flex';
+      contextText.textContent = `Discussing: ${serviceTitle}`;
+    } else {
+      contextBanner.style.display = 'none';
+    }
+  }
+
+  // Clear previous message text
+  const inputEl = document.getElementById('chatInputText');
+  if (inputEl) inputEl.value = '';
+
+  openModal('chatModal');
+  await loadThread(partnerId);
+
+  // Focus message input
+  setTimeout(() => {
+    if (inputEl) inputEl.focus();
+  }, 150);
+}
+
+/**
+ * Load Message Thread in Chat Modal
+ */
+async function loadThread(partnerId) {
+  const stream = document.getElementById('chatMessageStream');
+  if (!stream) return;
+
+  try {
+    const res = await fetch(`/api/messages/thread/${partnerId}`, {
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
+    const result = await res.json();
+
+    if (result.success) {
+      const messages = result.data || [];
+      const currentId = (currentUser._id || currentUser.id).toString();
+
+      if (messages.length === 0) {
+        stream.innerHTML = `
+          <div style="text-align: center; padding: 40px 16px; color: #94a3b8;">
+            <div style="font-size: 2rem; margin-bottom: 8px;">👋</div>
+            <p style="margin: 0; font-size: 0.95rem; font-weight: 600; color: #475569;">Start the conversation!</p>
+            <p style="margin: 4px 0 0; font-size: 0.8rem;">Ask about availability, project details, or barter ideas.</p>
+          </div>
+        `;
+      } else {
+        stream.innerHTML = messages
+          .map((msg) => {
+            const isMine = (msg.sender && (msg.sender._id || msg.sender).toString()) === currentId;
+            const timeStr = new Date(msg.createdAt).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            });
+
+            return `
+              <div class="chat-bubble ${isMine ? 'chat-bubble-sent' : 'chat-bubble-received'}">
+                ${
+                  msg.service && msg.service.title
+                    ? `<div style="font-size: 0.72rem; opacity: 0.85; margin-bottom: 3px; font-weight: 600;">📌 Re: ${escapeHtml(msg.service.title)}</div>`
+                    : ''
+                }
+                <div>${escapeHtml(msg.content)}</div>
+                <span class="chat-time ${isMine ? 'chat-time-sent' : 'chat-time-received'}">
+                  ${timeStr} ${isMine ? (msg.read ? '✓✓' : '✓') : ''}
+                </span>
+              </div>
+            `;
+          })
+          .join('');
+      }
+
+      // Auto-scroll to bottom of stream
+      stream.scrollTop = stream.scrollHeight;
+      fetchUnreadCount();
+    } else {
+      stream.innerHTML = `<div style="text-align: center; color: #ef4444; padding: 20px;">${result.message || 'Failed to load messages.'}</div>`;
+    }
+  } catch (err) {
+    console.error('Error loading thread:', err);
+    stream.innerHTML = `<div style="text-align: center; color: #ef4444; padding: 20px;">Network error loading messages.</div>`;
+  }
+}
+
+/**
+ * Handle sending a message in the Chat Modal
+ */
+async function handleSendMessage(e) {
+  e.preventDefault();
+  const inputEl = document.getElementById('chatInputText');
+  const partnerInput = document.getElementById('chatPartnerId');
+  const srvInput = document.getElementById('chatServiceId');
+  const bkgInput = document.getElementById('chatBookingId');
+  const sendBtn = document.getElementById('chatSendBtn');
+
+  if (!inputEl || !partnerInput) return;
+
+  const content = inputEl.value.trim();
+  const recipientId = partnerInput.value;
+  const serviceId = srvInput?.value || null;
+  const bookingId = bkgInput?.value || null;
+
+  if (!content) return;
+
+  if (sendBtn) sendBtn.disabled = true;
+
+  try {
+    const res = await fetch('/api/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({
+        recipientId,
+        content,
+        serviceId,
+        bookingId,
+      }),
+    });
+
+    const result = await res.json();
+
+    if (result.success) {
+      inputEl.value = '';
+      await loadThread(recipientId);
+    } else {
+      showToast(result.message || 'Could not send message.', 'info');
+    }
+  } catch (err) {
+    console.error('Send message error:', err);
+    showToast('Failed to connect to messaging server.', 'info');
+  } finally {
+    if (sendBtn) sendBtn.disabled = false;
+    inputEl.focus();
+  }
+}
+
+/**
+ * Refresh current active thread
+ */
+function refreshActiveThread() {
+  if (activeChatPartnerId) {
+    loadThread(activeChatPartnerId);
+    showToast('Thread refreshed.', 'info');
+  }
+}
+
+/**
+ * Close chat modal
+ */
+function closeChatModal() {
+  activeChatPartnerId = null;
+  closeModal('chatModal');
+}
+
+/**
+ * Load Conversations for Dashboard Tab
+ */
+async function loadDashboardConversations() {
+  const listEl = document.getElementById('dashConversationsList');
+  if (!listEl || !authToken) return;
+
+  listEl.innerHTML = `<div style="text-align: center; padding: 24px 12px; color: #94a3b8; font-size: 0.85rem;">Loading conversations...</div>`;
+
+  try {
+    const res = await fetch('/api/messages/conversations', {
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
+    const result = await res.json();
+
+    if (result.success) {
+      const convos = result.data || [];
+      document.getElementById('countMessages').textContent = result.count || 0;
+
+      if (convos.length === 0) {
+        listEl.innerHTML = `
+          <div style="text-align: center; padding: 32px 14px; color: #94a3b8; font-size: 0.82rem;">
+            <p style="margin: 0;">No active chats yet.</p>
+            <p style="margin: 6px 0 0; color: #64748b;">Browse student listings or profiles to start chatting!</p>
+          </div>
+        `;
+        return;
+      }
+
+      listEl.innerHTML = convos
+        .map((conv) => {
+          const partner = conv.partner;
+          const initials = (partner.name || 'ST')
+            .split(' ')
+            .map((n) => n[0])
+            .join('')
+            .substring(0, 2);
+          const timeStr = new Date(conv.lastMessage.createdAt).toLocaleDateString([], {
+            month: 'short',
+            day: 'numeric',
+          });
+
+          return `
+            <div class="conv-item" onclick="selectDashboardConversation('${partner._id}', '${escapeHtml(partner.name)}', '${escapeHtml(partner.university || '')}')">
+              <div class="avatar-circle" style="width: 36px; height: 36px; font-size: 0.85rem;">${escapeHtml(initials)}</div>
+              <div class="conv-info">
+                <div class="conv-name-row">
+                  <span class="conv-name">${escapeHtml(partner.name)}</span>
+                  <span class="conv-time">${timeStr}</span>
+                </div>
+                <div class="conv-snippet-row">
+                  <p class="conv-snippet">${escapeHtml(conv.lastMessage.content)}</p>
+                  ${conv.unreadCount > 0 ? `<span class="unread-badge-pill">${conv.unreadCount}</span>` : ''}
+                </div>
+              </div>
+            </div>
+          `;
+        })
+        .join('');
+    } else {
+      listEl.innerHTML = `<div style="text-align: center; padding: 20px; color: #dc2626; font-size: 0.82rem;">Failed to load conversations.</div>`;
+    }
+  } catch (err) {
+    console.error('Error loading conversations:', err);
+    listEl.innerHTML = `<div style="text-align: center; padding: 20px; color: #dc2626; font-size: 0.82rem;">Connection error.</div>`;
+  }
+}
+
+/**
+ * Select and open conversation thread inside Student Dashboard
+ */
+async function selectDashboardConversation(partnerId, partnerName, partnerCollege) {
+  // Highlight active conversation
+  document.querySelectorAll('#dashConversationsList .conv-item').forEach((item) => {
+    item.classList.remove('active');
+  });
+
+  const mainPane = document.getElementById('dashMessengerMain');
+  if (!mainPane) return;
+
+  const initials = (partnerName || 'ST')
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .substring(0, 2);
+
+  mainPane.innerHTML = `
+    <div class="chat-modal-header" style="background: white; border-bottom: 1px solid #e2e8f0;">
+      <div class="chat-header-user">
+        <div class="avatar-circle" style="width: 40px; height: 40px;">${escapeHtml(initials)}</div>
+        <div>
+          <h4 style="margin: 0; font-size: 0.98rem; font-weight: 700; color: #0f172a;">${escapeHtml(partnerName)}</h4>
+          <span style="font-size: 0.78rem; color: #2563eb; font-weight: 600;">${escapeHtml(partnerCollege || 'Student Peer')}</span>
+        </div>
+      </div>
+      <button class="btn btn-outline btn-xs" onclick="selectDashboardConversation('${partnerId}', '${escapeHtml(partnerName)}', '${escapeHtml(partnerCollege)}')">🔄 Refresh</button>
+    </div>
+
+    <div class="chat-message-stream" id="dashChatStream" style="height: 330px; flex: 1;">
+      <div style="text-align: center; padding: 24px; color: #94a3b8;">Loading messages...</div>
+    </div>
+
+    <form id="dashChatSendForm" class="chat-input-bar" onsubmit="handleSendDashboardMessage(event, '${partnerId}', '${escapeHtml(partnerName)}', '${escapeHtml(partnerCollege)}')">
+      <input type="text" id="dashChatInputText" class="chat-input" placeholder="Type a message to ${escapeHtml(partnerName)}..." required autocomplete="off">
+      <button type="submit" class="btn btn-primary btn-chat-send" id="dashChatSendBtn">
+        <span>Send</span>
+      </button>
+    </form>
+  `;
+
+  // Fetch thread messages
+  try {
+    const res = await fetch(`/api/messages/thread/${partnerId}`, {
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
+    const result = await res.json();
+    const stream = document.getElementById('dashChatStream');
+
+    if (result.success && stream) {
+      const messages = result.data || [];
+      const currentId = (currentUser._id || currentUser.id).toString();
+
+      if (messages.length === 0) {
+        stream.innerHTML = `<div style="text-align: center; padding: 32px; color: #94a3b8;">No messages yet. Send a greeting!</div>`;
+      } else {
+        stream.innerHTML = messages
+          .map((msg) => {
+            const isMine = (msg.sender && (msg.sender._id || msg.sender).toString()) === currentId;
+            const timeStr = new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            return `
+              <div class="chat-bubble ${isMine ? 'chat-bubble-sent' : 'chat-bubble-received'}">
+                ${msg.service && msg.service.title ? `<div style="font-size: 0.72rem; opacity: 0.85; margin-bottom: 2px;">📌 Re: ${escapeHtml(msg.service.title)}</div>` : ''}
+                <div>${escapeHtml(msg.content)}</div>
+                <span class="chat-time ${isMine ? 'chat-time-sent' : 'chat-time-received'}">${timeStr}</span>
+              </div>
+            `;
+          })
+          .join('');
+      }
+
+      stream.scrollTop = stream.scrollHeight;
+      fetchUnreadCount();
+    }
+  } catch (err) {
+    console.error('Error fetching dashboard thread:', err);
+  }
+}
+
+/**
+ * Handle sending message from Dashboard Chat
+ */
+async function handleSendDashboardMessage(e, partnerId, partnerName, partnerCollege) {
+  e.preventDefault();
+  const input = document.getElementById('dashChatInputText');
+  const btn = document.getElementById('dashChatSendBtn');
+  if (!input) return;
+
+  const content = input.value.trim();
+  if (!content) return;
+
+  if (btn) btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({
+        recipientId: partnerId,
+        content,
+      }),
+    });
+
+    const result = await res.json();
+    if (result.success) {
+      input.value = '';
+      await selectDashboardConversation(partnerId, partnerName, partnerCollege);
+      loadDashboardConversations();
+    } else {
+      showToast(result.message || 'Failed to send message.', 'info');
+    }
+  } catch (err) {
+    console.error('Dashboard send error:', err);
+    showToast('Failed to connect to messaging server.', 'info');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+// Background poller for unread messages (every 25 seconds when logged in)
+setInterval(() => {
+  if (currentUser && authToken) {
+    fetchUnreadCount();
+  }
+}, 25000);
+
 

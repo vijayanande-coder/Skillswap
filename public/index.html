@@ -658,6 +658,7 @@
           <button class="dash-tab active" data-tab="incomingOrders">Received Requests (<span id="countReceivedOrders">0</span>)</button>
           <button class="dash-tab" data-tab="myRequests">My Sent Proposals (<span id="countSentRequests">0</span>)</button>
           <button class="dash-tab" data-tab="myServices">My Published Listings (<span id="countMyServices">0</span>)</button>
+          <button class="dash-tab" data-tab="myMessages">💬 Messages (<span id="countMessages">0</span>)</button>
         </div>
 
         <!-- Tab 1: Received Orders -->
@@ -684,6 +685,30 @@
           </div>
           <div id="myServicesList">
             <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Tab 4: Student Messages / Conversations -->
+        <div id="tabMyMessages" class="dash-tab-pane" style="display: none;">
+          <div class="dash-messenger-layout">
+            <div class="messenger-sidebar">
+              <div class="messenger-sidebar-header">
+                <h5 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: #0f172a;">Conversations</h5>
+                <button class="btn btn-outline btn-xs" onclick="loadDashboardConversations()" title="Refresh messages">🔄 Refresh</button>
+              </div>
+              <div class="messenger-conversations-list" id="dashConversationsList">
+                <div style="text-align: center; padding: 24px 12px; color: #94a3b8; font-size: 0.85rem;">
+                  Loading conversations...
+                </div>
+              </div>
+            </div>
+            <div class="messenger-main" id="dashMessengerMain">
+              <div class="messenger-empty-state">
+                <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                <h4 style="margin: 12px 0 4px; color: #0f172a; font-size: 1rem;">No conversation selected</h4>
+                <p style="color: #64748b; font-size: 0.85rem; margin: 0;">Click on a peer from the left or message a student from any listing or profile card.</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -789,6 +814,7 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-outline" onclick="closeModal('serviceDetailModal')">Cancel</button>
+        <button class="btn btn-outline" id="modalMessageBtn" style="display: none;" onclick="messageProviderFromModal()">💬 Message Provider</button>
         <button class="btn btn-primary" id="modalActionBtn">Take Action</button>
       </div>
     </div>
@@ -1036,6 +1062,53 @@
           <button type="button" class="btn btn-outline" onclick="closeModal('reviewModal')">Cancel</button>
           <button type="submit" class="btn btn-primary" id="submitReviewBtn">Submit Review</button>
         </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 9: In-App Student Messenger Modal
+       ======================================================================== -->
+  <div class="modal-overlay" id="chatModal" role="dialog" aria-modal="true">
+    <div class="modal-dialog modal-dialog-chat">
+      <div class="modal-header chat-modal-header">
+        <div class="chat-header-user">
+          <div class="avatar-circle" id="chatModalAvatar">ST</div>
+          <div>
+            <h4 id="chatModalPartnerName" style="margin: 0; font-size: 1.05rem; font-weight: 700; color: #0f172a;">Student Peer</h4>
+            <span id="chatModalPartnerCollege" style="font-size: 0.78rem; color: #2563eb; font-weight: 600;">Campus Student</span>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button class="btn btn-outline btn-xs" onclick="refreshActiveThread()" title="Refresh thread messages">🔄 Refresh</button>
+          <button class="modal-close-btn" onclick="closeChatModal()">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Context pill if chatting about a specific gig/lesson/booking -->
+      <div id="chatContextBanner" class="chat-context-banner" style="display: none;">
+        <span id="chatContextText">Discussing: Service Title</span>
+      </div>
+
+      <!-- Messages Stream -->
+      <div class="chat-message-stream" id="chatMessageStream">
+        <div style="text-align: center; padding: 32px 16px; color: #94a3b8; font-size: 0.85rem;">
+          Loading conversation history...
+        </div>
+      </div>
+
+      <!-- Input Bar -->
+      <form id="chatSendForm" class="chat-input-bar">
+        <input type="hidden" id="chatPartnerId" value="">
+        <input type="hidden" id="chatServiceId" value="">
+        <input type="hidden" id="chatBookingId" value="">
+        <textarea id="chatInputText" class="chat-input" placeholder="Type a message to peer... (Press Enter to send)" rows="1" required></textarea>
+        <button type="submit" class="btn btn-primary btn-chat-send" id="chatSendBtn">
+          <span>Send</span>
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </button>
       </form>
     </div>
   </div>
