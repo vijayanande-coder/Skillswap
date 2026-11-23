@@ -968,6 +968,7 @@ function openServiceDetailModal(id) {
         actionBtn.disabled = false;
         actionBtn.textContent = actionText;
       }
+    };
   }
 
   const msgBtn = document.getElementById('modalMessageBtn');
